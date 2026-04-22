@@ -1,0 +1,29 @@
+# Datasets and Large Files (Do not push to GitHub!)
+law/
+archive/
+data_and_json/
+chroma_db/
+laww_dataset.jsonl
+*.pdf
+*.db
+*.sqlite3
+webpage/
+
+# Python Cache & Environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.env
+
+# Node/Frontend
+webpage/node_modules/
+webpage/dist/
+
+# OS and Editor
+.DS_Store
+.vscode/
+.idea/
+.claude/
+.gemini/
