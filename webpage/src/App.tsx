@@ -47,7 +47,12 @@ export default function App() {
     initUser();
 
     // Fetch ollama models
-    fetch('http://localhost:11434/api/tags')
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    fetch(`${apiUrl}/api/models`, {
+      headers: {
+        'ngrok-skip-browser-warning': 'true'
+      }
+    })
       .then(res => res.json())
       .then(data => {
         if (data.models) {
@@ -56,7 +61,7 @@ export default function App() {
           if (models.length > 0) setSelectedOllamaModel(models[0]);
         }
       })
-      .catch(err => console.log("Ollama not running or unreachable:", err));
+      .catch(err => console.log("Ollama models not reachable via backend:", err));
   }, []);
 
   useEffect(() => {

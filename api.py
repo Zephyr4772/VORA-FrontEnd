@@ -343,6 +343,18 @@ def build_llm_prompt(query: str, results: dict) -> tuple[str, list]:
 def health():
     return {"status": "ok"}
 
+@app.get("/api/models")
+def get_models():
+    """Fetch available Ollama models from the host machine."""
+    try:
+        import requests
+        r = requests.get("http://localhost:11434/api/tags", timeout=2)
+        if r.status_code == 200:
+            return r.json()
+        return {"models": []}
+    except:
+        return {"models": []}
+
 @app.post("/api/query")
 async def query_endpoint(req: QueryRequest):
     """
