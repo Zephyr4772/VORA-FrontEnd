@@ -1,16 +1,19 @@
 # Datasets and Large Files (Do not push to GitHub!)
 law/
 archive/
-data_and_json/
+data_and_json/extracted_json/
+Supreme_Court_Vault/
 chroma_db/
 laww_dataset.jsonl
 *.pdf
 *.db
 *.sqlite3
-webpage/
 
 # Python Cache & Environments
 __pycache__/
+token.pickle
+credentials.json
+drive_id_map.json
 *.py[cod]
 *$py.class
 venv/
