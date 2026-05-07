@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { supabase } from './supabaseClient';
 
 export interface CaseCard {
   case_no: string;
@@ -17,6 +16,13 @@ export interface Message {
   cases?: CaseCard[];
 }
 
+// API URL: when deployed on Vercel, use relative "/api" so Vercel's rewrite proxy handles CORS.
+// When running locally, use the env var or fallback to localhost.
+const IS_VERCEL = typeof window !== 'undefined' && window.location.hostname !== 'localhost';
+const API_BASE = IS_VERCEL
+  ? ''                                                              // relative – Vercel rewrites /api/* to ngrok
+  : (import.meta.env.VITE_API_URL || 'http://localhost:8000');    // local dev
+
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -24,9 +30,6 @@ export default function App() {
   const [searchCases, setSearchCases] = useState(true);
   const [depth, setDepth] = useState<'quick' | 'standard' | 'deep'>('standard');
   const [isLoading, setIsLoading] = useState(false);
-  
-  const [chatId, setChatId] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
 
   const [provider, setProvider] = useState<'gemini' | 'ollama'>('gemini');
   const [ollamaModels, setOllamaModels] = useState<string[]>([]);
@@ -36,22 +39,9 @@ export default function App() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    async function initUser() {
-      const { data } = await supabase
-        .from('users')
-        .select('id')
-        .eq('email', 'demo@lexis.ai')
-        .single();
-      if (data) setUserId(data.id);
-    }
-    initUser();
-
-    // Fetch ollama models
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    fetch(`${apiUrl}/api/models`, {
-      headers: {
-        'ngrok-skip-browser-warning': 'true'
-      }
+    // Fetch available Ollama models from the backend
+    fetch(`${API_BASE}/api/models`, {
+      headers: { 'ngrok-skip-browser-warning': 'true' }
     })
       .then(res => res.json())
       .then(data => {
@@ -61,7 +51,7 @@ export default function App() {
           if (models.length > 0) setSelectedOllamaModel(models[0]);
         }
       })
-      .catch(err => console.log("Ollama models not reachable via backend:", err));
+      .catch(err => console.log('Ollama models not reachable via backend:', err));
   }, []);
 
   useEffect(() => {
@@ -83,46 +73,23 @@ export default function App() {
   const handleSubmit = async () => {
     if (!input.trim()) return;
     if (provider === 'gemini' && !apiKey) {
-      alert("Please set your Gemini API Key in the sidebar.");
+      alert('Please set your Gemini API Key in the sidebar.');
       return;
-    }
-
-    let currentChatId = chatId;
-    if (!currentChatId && userId) {
-      const { data } = await supabase
-        .from('chats')
-        .insert({ user_id: userId, title: 'Legal Research Chat' })
-        .select('id')
-        .single();
-      if (data) {
-        setChatId(data.id);
-        currentChatId = data.id;
-      }
     }
 
     const userMessage: Message = { role: 'user', content: input };
     setMessages(prev => [...prev, userMessage]);
-    
-    if (currentChatId) {
-      await supabase.from('messages').insert({
-        chat_id: currentChatId,
-        role: 'user',
-        content: userMessage.content
-      });
-    }
-
     setInput('');
     setIsLoading(true);
 
     const n_results = depth === 'quick' ? 5 : depth === 'standard' ? 10 : 25;
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
     abortControllerRef.current = new AbortController();
 
     try {
-      const response = await fetch(`${apiUrl}/api/query`, {
+      const response = await fetch(`${API_BASE}/api/query`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'ngrok-skip-browser-warning': 'true'
         },
@@ -137,11 +104,11 @@ export default function App() {
         signal: abortControllerRef.current.signal
       });
 
-      if (!response.ok) throw new Error("Failed to fetch from backend");
-      if (!response.body) throw new Error("No response body");
+      if (!response.ok) throw new Error('Failed to fetch from backend');
+      if (!response.body) throw new Error('No response body');
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder("utf-8");
+      const decoder = new TextDecoder('utf-8');
 
       let assistantMessage: Message = { role: 'assistant', content: '', cases: [] };
       setMessages(prev => [...prev, assistantMessage]);
@@ -179,18 +146,9 @@ export default function App() {
               });
             }
           } catch (e) {
-            console.error("JSON parse error on chunk:", line);
+            console.error('JSON parse error on chunk:', line);
           }
         }
-      }
-
-      if (currentChatId) {
-        await supabase.from('messages').insert({
-          chat_id: currentChatId,
-          role: 'assistant',
-          content: assistantMessage.content,
-          cases_retrieved_json: assistantMessage.cases || null
-        });
       }
 
     } catch (err: any) {
@@ -209,18 +167,18 @@ export default function App() {
       {/* Sidebar */}
       <div className="sidebar">
         <div className="sidebar-title">VORA / ヴォラ</div>
-        
+
         <div className="settings-block">
           <label className="message-role">PROVIDER</label>
           <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
-            <button 
+            <button
               className={`btn-sharp ${provider === 'gemini' ? 'active' : ''}`}
               style={{ flex: 1, backgroundColor: provider === 'gemini' ? '#000' : 'transparent', color: provider === 'gemini' ? '#f7f6f0' : '#000' }}
               onClick={() => setProvider('gemini')}
             >
               Gemini
             </button>
-            <button 
+            <button
               className={`btn-sharp ${provider === 'ollama' ? 'active' : ''}`}
               style={{ flex: 1, backgroundColor: provider === 'ollama' ? '#000' : 'transparent', color: provider === 'ollama' ? '#f7f6f0' : '#000' }}
               onClick={() => setProvider('ollama')}
@@ -228,14 +186,14 @@ export default function App() {
               Ollama
             </button>
           </div>
-          
+
           {provider === 'gemini' ? (
             <>
               <label className="message-role">GEMINI API KEY</label>
-              <input 
-                type="password" 
-                className="input-sharp" 
-                placeholder="AIzaSy..." 
+              <input
+                type="password"
+                className="input-sharp"
+                placeholder="AIzaSy..."
                 value={apiKey}
                 onChange={e => setApiKey(e.target.value)}
               />
@@ -243,8 +201,8 @@ export default function App() {
           ) : (
             <>
               <label className="message-role">OLLAMA MODEL</label>
-              <select 
-                className="input-sharp" 
+              <select
+                className="input-sharp"
                 value={selectedOllamaModel}
                 onChange={e => setSelectedOllamaModel(e.target.value)}
                 style={{ cursor: 'pointer' }}
@@ -304,18 +262,18 @@ export default function App() {
         <div className="prompt-bar-container">
           <div className="controls-row">
             <div className="control-item">
-              <input 
-                type="checkbox" 
-                checked={searchCases} 
-                onChange={e => setSearchCases(e.target.checked)} 
+              <input
+                type="checkbox"
+                checked={searchCases}
+                onChange={e => setSearchCases(e.target.checked)}
                 id="rag-toggle"
               />
               <label htmlFor="rag-toggle">ENABLE RAG</label>
             </div>
             <div className="control-item">
               <label>DEPTH:</label>
-              <select 
-                value={depth} 
+              <select
+                value={depth}
                 onChange={e => setDepth(e.target.value as any)}
                 className="input-sharp"
                 style={{ width: 'auto', margin: 0, padding: '2px 8px' }}
@@ -326,9 +284,9 @@ export default function App() {
               </select>
             </div>
           </div>
-          
+
           <div className="textarea-container">
-            <textarea 
+            <textarea
               className="textarea-sharp"
               placeholder="Query the Indian Supreme Court database..."
               value={input}
