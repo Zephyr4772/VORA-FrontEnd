@@ -54,7 +54,7 @@ function Nav({ onRequestAccess }: { onRequestAccess: () => void }) {
         </nav>
         <div className="flex items-center gap-3">
           <a
-            href="http://localhost:8080/"
+            href={import.meta.env.VITE_APP_URL || "http://localhost:8080/"}
             className="hidden text-xs font-medium text-muted-foreground transition-colors hover:text-foreground md:block"
           >
             Launch UI
@@ -121,7 +121,7 @@ function Hero({ onRequestAccess }: { onRequestAccess: () => void }) {
               className="flex flex-col gap-4 sm:flex-row sm:items-center"
             >
               <a
-                href="http://localhost:8080/"
+                href={import.meta.env.VITE_APP_URL || "http://localhost:8080/"}
                 className="group inline-flex items-center justify-center gap-3 rounded-full bg-foreground py-2.5 pl-5 pr-2 text-xs font-medium text-background transition-transform hover:scale-[1.03]"
               >
                 Launch Web UI
