@@ -1,0 +1,8 @@
+{
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://rack-varnish-urology.ngrok-free.dev/api/:path*"
+    }
+  ]
+}
