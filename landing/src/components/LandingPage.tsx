@@ -10,8 +10,13 @@ interface Props {
 
 function Logo() {
   return (
-    <div className="flex items-center">
-      <img src="/vora-logo-name.png" alt="VORA" className="h-6 object-contain" />
+    <div className="flex items-center gap-2 text-sm font-medium tracking-tight">
+      <div className="grid h-5 w-5 grid-cols-3 grid-rows-3 gap-[2px]">
+        {[1, 1, 1, 1, 0, 1, 1, 1, 1].map((v, i) => (
+          <div key={i} className={v ? "bg-foreground" : "bg-transparent"} />
+        ))}
+      </div>
+      <span className="text-base">VORA</span>
     </div>
   );
 }
