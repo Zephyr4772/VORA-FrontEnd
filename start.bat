@@ -65,7 +65,7 @@ echo [4/6] Updating Vercel proxy config with live URL...
 echo       vercel.json updated. Pushing to git so Vercel redeploys...
 cd /d "%~dp0"
 git add frontend/vercel.json
-git commit -m "chore: update ngrok URL for live session [skip ci]" --quiet
+git commit -m "chore: update ngrok URL for live session" --quiet
 git push --quiet
 if %ERRORLEVEL% NEQ 0 (
     echo       [WARN] git push failed - Vercel may use an old URL.
@@ -82,41 +82,33 @@ echo [5/6] Starting FastAPI backend (RAG engine on port 8000)...
 start "VORA - FastAPI Backend" cmd /k "title VORA API Server && cd /d %~dp0backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000"
 timeout /t 4 /nobreak >nul
 
-:: ─── Step 6: Start React Frontend ──────────────────────────────────────────
-echo.
-echo [6/6] Starting React Frontend (Vite dev server on port 5173)...
-start "VORA - React Frontend" cmd /k "title VORA Frontend Server && cd /d %~dp0frontend && npm run dev"
-timeout /t 2 /nobreak >nul
-
 :: ─── Done ─────────────────────────────────────────────────────────────────
 cls
 color 0B
 echo.
 echo  ==========================================
-echo   VORA IS LIVE!
+echo   VORA BACKEND IS LIVE!
 echo  ==========================================
 echo.
-echo   Backend (ngrok public):
+echo   Ngrok Public API URL:
 echo   %NGROK_URL%
 echo.
-echo   Local backend:  http://localhost:8000
-echo   Local frontend: http://localhost:5173
+echo   Local API:      http://localhost:8000
 echo   Health check:   %NGROK_URL%/api/health
-echo   Ollama:         http://localhost:11434
+echo   Ollama Engine:  http://localhost:11434
 echo.
 echo  ------------------------------------------
-echo   VERCEL FRONTEND
+echo   LIVE VERCEL FRONTENDS
 echo  ------------------------------------------
-echo   https://vora-front-end.vercel.app
+echo   Chat App:     https://vora-frontend.vercel.app  (or your Vercel URL)
+echo   Landing Page: https://vora-landing.vercel.app   (or your Vercel URL)
 echo.
-echo   Vercel will auto-redeploy in ~30 seconds
-echo   with the new ngrok URL baked in.
-echo   (All /api/* calls proxy through Vercel -
-echo    no CORS issues!)
+echo   Vercel auto-redeploys in ~30 seconds when this script runs,
+echo   updating the cloud proxy to point to your live Ngrok URL.
 echo.
 echo  ==========================================
-echo   Keep ALL terminal windows open.
-echo   Close this launcher window when done.
+echo   Keep this terminal window open.
+echo   Close this launcher to shut down the backend.
 echo  ==========================================
 echo.
 pause

@@ -24,9 +24,9 @@ from chromadb.utils import embedding_functions
 import google.generativeai as genai
 
 # ── Constants ─────────────────────────────────────────────────────────────────
-CHROMA_DIR = r"d:\laww\chroma_db"
+CHROMA_DIR = r"d:\laww\backend\chroma_db"
 COLLECTION_NAME = "supreme_court_judgments"
-DRIVE_MAP_FILE = r"d:\laww\drive_id_map.json"
+DRIVE_MAP_FILE = r"d:\laww\data\drive_id_map.json"
 
 # Load drive map into memory once
 drive_id_map = {}
@@ -622,7 +622,7 @@ def download_zip_endpoint(req: ZipRequest):
 def sync_drive():
     try:
         import subprocess
-        script_path = r"d:\laww\pipeline\extract_drive_ids.py"
+        script_path = r"d:\laww\backend\pipeline\extract_drive_ids.py"
         result = subprocess.run(["python", script_path], capture_output=True, text=True)
         if result.returncode == 0:
             global drive_id_map
