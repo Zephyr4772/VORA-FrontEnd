@@ -96,9 +96,7 @@ export default function LeftSidebar({
           {/* Logo Toggle */}
           <div className={`mt-2 flex items-center ${isOpen ? 'w-full px-5' : 'justify-center'} shrink-0 cursor-pointer h-12`} onClick={onToggle}>
             <div className="w-8 h-8 flex items-center justify-center shrink-0">
-              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#D16F54" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-              </svg>
+              <img src="/vora-logo-icon.png" alt="VORA" className="w-6 h-6 object-contain" />
             </div>
             <span className={`ml-3 font-serif text-[22px] text-[#333] tracking-tight transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 hidden'}`}>
               Vora Legal
