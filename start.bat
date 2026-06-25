@@ -1,85 +1,42 @@
 @echo off
-title VORA - Starting...
+title VORA - Local Deployment Launcher
 color 0B
 
 echo.
 echo  ==========================================
 echo   VORA - Legal Intelligence System
-echo   Deployment Launcher
+echo   Local Deployment Launcher
 echo  ==========================================
 echo.
 
 :: ─── Step 1: Start Ollama ─────────────────────────────────────────────────
-echo [1/6] Starting Ollama (embedding model)...
+echo [1/4] Starting Ollama (embedding model)...
 tasklist /FI "IMAGENAME eq ollama.exe" 2>NUL | find /I "ollama.exe" >NUL
 if %ERRORLEVEL% NEQ 0 (
     start "Ollama" ollama serve
     echo       Ollama started. Waiting for it to be ready...
-    timeout /t 5 /nobreak >nul
+    timeout /t 6 /nobreak >nul
 ) else (
     echo       Ollama already running, skipping.
 )
 echo       Ollama OK on port 11434.
 
-:: ─── Step 2: Start ngrok tunnel on port 8000 ──────────────────────────────
+:: ─── Step 2: Start FastAPI backend ────────────────────────────────────────
 echo.
-echo [2/6] Starting ngrok tunnel (port 8000)...
-taskkill /F /IM ngrok.exe >nul 2>&1
-timeout /t 1 /nobreak >nul
-start "ngrok - VORA Tunnel" ngrok http 8000 --log=stdout
-echo       Waiting for ngrok to initialise...
-timeout /t 6 /nobreak >nul
+echo [2/4] Starting FastAPI backend (RAG engine on port 8000)...
+start "VORA - FastAPI Backend" cmd /k "title VORA API Server && cd /d "%~dp0backend" && python -m uvicorn api:app --host 0.0.0.0 --port 8000"
+timeout /t 5 /nobreak >nul
 
-:: ─── Step 3: Fetch the public URL ─────────────────────────────────────────
-echo [3/6] Fetching public ngrok URL...
-for /f "delims=" %%i in ('powershell -NoProfile -Command "(Invoke-RestMethod http://localhost:4040/api/tunnels).tunnels | Where-Object { $_.proto -eq 'https' } | Select-Object -First 1 -ExpandProperty public_url"') do set NGROK_URL=%%i
-
-if "%NGROK_URL%"=="" (
-    echo.
-    echo   [ERROR] Could not get ngrok URL.
-    echo   Make sure ngrok is installed and authenticated:
-    echo     1. Download: https://ngrok.com/download
-    echo     2. Run:  ngrok config add-authtoken YOUR_TOKEN
-    echo.
-    pause
-    exit /b 1
-)
-echo       Got URL: %NGROK_URL%
-
-:: ─── Step 4: Update vercel.json with live ngrok URL and push ─────────────
+:: ─── Step 3: Start ngrok tunnel ────────────────────────────────────────────
 echo.
-echo [4/6] Updating Vercel proxy config with live URL...
+echo [3/4] Starting ngrok tunnel to Vercel...
+start "VORA - ngrok Tunnel" cmd /k "title VORA ngrok Tunnel && ngrok http --url=rack-varnish-urology.ngrok-free.dev 8000"
+timeout /t 4 /nobreak >nul
 
-:: Write the new vercel.json with the real ngrok URL
-(
-  echo {
-  echo   "rewrites": [
-  echo     {
-  echo       "source": "/api/:path*",
-  echo       "destination": "%NGROK_URL%/api/:path*"
-  echo     }
-  echo   ]
-  echo }
-) > "%~dp0frontend\vercel.json"
-
-echo       vercel.json updated. Pushing to git so Vercel redeploys...
-cd /d "%~dp0"
-git add frontend/vercel.json
-git commit -m "chore: update ngrok URL for live session" --quiet
-git push --quiet
-if %ERRORLEVEL% NEQ 0 (
-    echo       [WARN] git push failed - Vercel may use an old URL.
-    echo       Manually paste this URL in the Vercel dashboard:
-    echo       %NGROK_URL%
-) else (
-    echo       Pushed! Vercel will redeploy in ~30 seconds.
-)
-cd /d "%~dp0"
-
-:: ─── Step 5: Start FastAPI backend ────────────────────────────────────────
+:: ─── Step 4: Start Vite frontend (local dev only) ────────────────────────
 echo.
-echo [5/6] Starting FastAPI backend (RAG engine on port 8000)...
-start "VORA - FastAPI Backend" cmd /k "title VORA API Server && cd /d %~dp0backend && python -m uvicorn api:app --host 0.0.0.0 --port 8000"
+echo [4/4] Starting React Frontend (local dev at port 8080)...
+start "VORA - React Frontend" cmd /k "title VORA Frontend && cd /d "%~dp0frontend" && npm run dev"
 timeout /t 4 /nobreak >nul
 
 :: ─── Done ─────────────────────────────────────────────────────────────────
@@ -87,28 +44,28 @@ cls
 color 0B
 echo.
 echo  ==========================================
-echo   VORA BACKEND IS LIVE!
+echo   VORA IS LIVE!
 echo  ==========================================
 echo.
-echo   Ngrok Public API URL:
-echo   %NGROK_URL%
-echo.
 echo   Local API:      http://localhost:8000
-echo   Health check:   %NGROK_URL%/api/health
+echo   Health check:   http://localhost:8000/api/health
 echo   Ollama Engine:  http://localhost:11434
 echo.
 echo  ------------------------------------------
-echo   LIVE VERCEL FRONTENDS
+echo   DEPLOYED FRONTENDS (via ngrok tunnel)
 echo  ------------------------------------------
-echo   Chat App:     https://vora-frontend.vercel.app  (or your Vercel URL)
-echo   Landing Page: https://vora-landing.vercel.app   (or your Vercel URL)
+echo   Chat App:     https://vora-ai-psi.vercel.app
+echo   Login/Land:   https://vora-jade.vercel.app
 echo.
-echo   Vercel auto-redeploys in ~30 seconds when this script runs,
-echo   updating the cloud proxy to point to your live Ngrok URL.
+echo  ------------------------------------------
+echo   LOCAL FRONTEND (dev only)
+echo  ------------------------------------------
+echo   Chat App:     http://localhost:8080
 echo.
 echo  ==========================================
-echo   Keep this terminal window open.
-echo   Close this launcher to shut down the backend.
+echo   Keep ALL terminal windows running.
+echo   ngrok window must stay open for Vercel
+echo   deployments to reach the local backend.
 echo  ==========================================
 echo.
 pause

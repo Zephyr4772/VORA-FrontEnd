@@ -1,4 +1,4 @@
-import { Search, Plus, Settings, HelpCircle, User, Home, MessageSquare, LogIn, Mail, Lock, X, Loader2, UserPlus } from 'lucide-react';
+import { Search, Plus, Settings, HelpCircle, User, Home, MessageSquare, LogIn, Mail, Lock, X, Loader2, UserPlus, Sparkles } from 'lucide-react';
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
 
@@ -47,8 +47,28 @@ export default function LeftSidebar({
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [error, setError] = useState('');
   const [info, setInfo] = useState('');
+
+  const DEMO_EMAIL = 'demo@vora.ai';
+  const DEMO_PASSWORD = 'VoraDemo2024!';
+  const DEMO_NAME = 'Demo User';
+
+  const handleDemo = async () => {
+    setDemoLoading(true); setError('');
+    const { data, error: err } = await supabase.auth.signInWithPassword({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+    });
+    setDemoLoading(false);
+    if (err) { setError('Demo login failed: ' + err.message); return; }
+    if (data.user && onSignIn) {
+      onSignIn(data.user.id, DEMO_NAME);
+      setShowSignInModal(false);
+      resetModal();
+    }
+  };
 
   const resetModal = () => {
     setEmail(''); setPassword(''); setName(''); setError(''); setInfo('');
@@ -330,6 +350,16 @@ export default function LeftSidebar({
                   ) : (
                     <><UserPlus size={16} /> Create Account</>
                   )}
+                </button>
+
+                {/* Demo quick-fill */}
+                <button
+                  onClick={handleDemo}
+                  disabled={demoLoading}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 hover:from-amber-500/20 hover:to-orange-500/20 border border-amber-500/20 disabled:opacity-50 text-amber-600 rounded-xl font-medium text-sm transition-all"
+                >
+                  {demoLoading ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  {demoLoading ? 'Loading demo...' : 'Try Demo Account'}
                 </button>
               </div>
             </div>

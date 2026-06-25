@@ -1,6 +1,10 @@
 import { useState } from 'react';
-import { X, Scale, User, Mail, Lock, LogIn, UserPlus, Ghost } from 'lucide-react';
+import { X, User, Mail, Lock, LogIn, UserPlus, Ghost, Sparkles } from 'lucide-react';
 import { supabase } from '../supabaseClient';
+
+const DEMO_EMAIL = 'demo@vora.ai';
+const DEMO_PASSWORD = 'VoraDemo2024!';
+const DEMO_NAME = 'Demo User';
 
 interface Props {
   onAuthComplete: (userId: string, isGuest: boolean, displayName: string) => void;
@@ -15,11 +19,25 @@ export default function LoginModal({ onAuthComplete }: Props) {
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
   const [info, setInfo] = useState('');
 
   const handleGuest = () => {
     const guestId = `guest_${Date.now()}`;
     onAuthComplete(guestId, true, 'Counselor');
+  };
+
+  const handleDemo = async () => {
+    setDemoLoading(true); setError('');
+    const { data, error: err } = await supabase.auth.signInWithPassword({
+      email: DEMO_EMAIL,
+      password: DEMO_PASSWORD,
+    });
+    setDemoLoading(false);
+    if (err) { setError('Demo login failed: ' + err.message); return; }
+    if (data.user) {
+      onAuthComplete(data.user.id, false, DEMO_NAME);
+    }
   };
 
   const handleLogin = async () => {
@@ -75,6 +93,30 @@ export default function LoginModal({ onAuthComplete }: Props) {
             <div className="p-8 space-y-4">
               <h2 className="text-white font-semibold text-lg text-center mb-6">Welcome, Counselor</h2>
 
+              {/* Demo CTA — most prominent */}
+              <button
+                onClick={handleDemo}
+                disabled={demoLoading}
+                className="w-full flex items-center gap-3 p-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 disabled:opacity-60 text-white rounded-xl font-medium text-sm transition-all shadow-lg shadow-orange-500/30 relative overflow-hidden group"
+              >
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <Sparkles size={18} className="shrink-0" />
+                <div className="text-left flex-1">
+                  <div className="font-semibold">{demoLoading ? 'Signing in...' : 'Try Demo — One Click'}</div>
+                  <div className="text-[11px] text-orange-100 font-normal">Full access · no account needed</div>
+                </div>
+                {!demoLoading && <span className="text-xs bg-white/20 px-2 py-0.5 rounded-full">FREE</span>}
+              </button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-white/5" />
+                </div>
+                <div className="relative flex justify-center text-xs">
+                  <span className="bg-[#111318] px-3 text-gray-500">or sign in with your account</span>
+                </div>
+              </div>
+
               <button
                 onClick={() => setMode('login')}
                 className="w-full flex items-center gap-3 p-4 bg-[#007bff] hover:bg-[#0056b3] text-white rounded-xl font-medium text-sm transition-all shadow-lg shadow-blue-500/20"
@@ -91,25 +133,15 @@ export default function LoginModal({ onAuthComplete }: Props) {
                 <span>Create Account</span>
               </button>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-white/5" />
-                </div>
-                <div className="relative flex justify-center text-xs">
-                  <span className="bg-[#111318] px-3 text-gray-500">or</span>
-                </div>
-              </div>
-
               <button
                 onClick={handleGuest}
-                className="w-full flex items-center gap-3 p-4 bg-transparent hover:bg-white/5 text-gray-400 hover:text-white rounded-xl font-medium text-sm transition-all border border-white/5"
+                className="w-full flex items-center gap-3 p-4 bg-transparent hover:bg-white/5 text-gray-500 hover:text-gray-300 rounded-xl font-medium text-sm transition-all"
               >
-                <Ghost size={18} />
-                <div className="text-left">
-                  <div>Continue as Guest</div>
-                  <div className="text-[11px] text-gray-600 font-normal">No account needed · session only</div>
-                </div>
+                <Ghost size={16} />
+                <span className="text-[12px]">Continue as Guest (session only)</span>
               </button>
+
+              {error && <p className="text-red-400 text-xs text-center">{error}</p>}
             </div>
           )}
 
@@ -148,9 +180,12 @@ export default function LoginModal({ onAuthComplete }: Props) {
                   Don't have an account? <span className="text-[#007bff]">Sign up</span>
                 </button>
               </div>
-              <div className="mt-3 text-center">
-                <button onClick={handleGuest} className="text-xs text-gray-600 hover:text-gray-400 transition-colors flex items-center gap-1 mx-auto">
-                  <Ghost size={12} /> Continue as guest instead
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <button onClick={handleDemo} disabled={demoLoading} className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1">
+                  <Sparkles size={12} /> {demoLoading ? 'Loading demo...' : 'Use demo account instead'}
+                </button>
+                <button onClick={handleGuest} className="text-xs text-gray-600 hover:text-gray-400 transition-colors flex items-center gap-1">
+                  <Ghost size={12} /> Continue as guest (no persistence)
                 </button>
               </div>
             </div>
@@ -195,9 +230,12 @@ export default function LoginModal({ onAuthComplete }: Props) {
                   Already have an account? <span className="text-[#007bff]">Sign in</span>
                 </button>
               </div>
-              <div className="mt-3 text-center">
-                <button onClick={handleGuest} className="text-xs text-gray-600 hover:text-gray-400 transition-colors flex items-center gap-1 mx-auto">
-                  <Ghost size={12} /> Continue as guest instead
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <button onClick={handleDemo} disabled={demoLoading} className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1">
+                  <Sparkles size={12} /> {demoLoading ? 'Loading demo...' : 'Use demo account instead'}
+                </button>
+                <button onClick={handleGuest} className="text-xs text-gray-600 hover:text-gray-400 transition-colors flex items-center gap-1">
+                  <Ghost size={12} /> Guest mode
                 </button>
               </div>
             </div>
